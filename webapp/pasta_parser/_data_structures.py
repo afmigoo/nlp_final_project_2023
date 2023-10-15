@@ -43,7 +43,8 @@ class Trigram:
         if not isinstance(__value, Trigram): raise TypeError("Compared value must be the same type.")
         return self[0] == __value[0] and \
                 self[1] == __value[1] and \
-                self[2] == __value[2]
+                self[2] == __value[2] and \
+                self.text_position == __value.text_position
 
     def __str__(self) -> str:
         def short_token_str(token: Token) -> str:
