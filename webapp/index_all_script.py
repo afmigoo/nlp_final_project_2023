@@ -13,5 +13,6 @@ pb = tqdm(from_csv(csv_data))
 for text, href in pb:
     for trigram in get_text_trigrams(text):
         counter += 1
-        # DataBase.insert_trigram(trigram)
+        # text_id = DataBase.insert_text(text, href)
+        # DataBase.insert_trigram(trigram, text_id)
     pb.set_description(f"{counter} trigrams")

@@ -34,7 +34,7 @@ def get_text_sentences(text: str) -> List[Sentence]:
 
 def is_a_word(word: Word) -> bool:
     """
-    Returns true if word is not punctuation. Words like "как-то" are recognized as words, not punktuation.
+    Returns true if word is not punctuation. Words like "как-то" are recognized as words, not punctuation.
     """
     return bool(re.match(r'[a-zA-Zа-яА-Я]+-?[a-zA-Zа-яА-Я]+', word.text))
 
