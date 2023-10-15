@@ -11,8 +11,8 @@ csv_data = Path(__file__).parent.joinpath('corpora_past.csv')
 counter = 0
 pb = tqdm(from_csv(csv_data))
 for text, href in pb:
+    # text_id = DataBase.insert_text(text, href)
     for trigram in get_text_trigrams(text):
         counter += 1
-        # text_id = DataBase.insert_text(text, href)
         # DataBase.insert_trigram(trigram, text_id)
     pb.set_description(f"{counter} trigrams")
