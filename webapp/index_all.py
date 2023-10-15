@@ -1,25 +1,17 @@
 from pathlib import Path
-from pasta_parser import parse_text
-from pprint import pprint
+from pasta_parser import get_text_trigrams, from_csv
 from dotenv import load_dotenv, find_dotenv
+from tqdm import tqdm
 import os
 load_dotenv(find_dotenv('login.env'))
 
-from db_manager import DataBase
+#from db_manager import DataBase
+csv_data = Path(__file__).parent.joinpath('corpora_past.csv')
 
-data_file_path = Path(__file__).parent.joinpath('pastas.txt')
-separator = '<|endoftext|>'
-
-def load_texts(path=data_file_path):
-    with open(path, 'r', encoding='utf-8') as f:
-        current_text = ''
-        for line in f:
-            if separator in line:
-                yield current_text
-                current_text = ''
-            else:
-                if line != '\n': current_text += '\n' + line
-        yield current_text
-
-for t in load_texts():
-    tokens = list(parse_text(t))
+counter = 0
+pb = tqdm(from_csv(csv_data))
+for text, href in pb:
+    for trigram in get_text_trigrams(text):
+        counter += 1
+        # DataBase.insert_trigram(trigram)
+    pb.set_description(f"{counter} trigrams")

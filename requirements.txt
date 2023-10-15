@@ -1,5 +1,6 @@
 fastapi
 psycopg2
 nltk
-pymorphy2
+stanza
+pandas
 python-dotenv
