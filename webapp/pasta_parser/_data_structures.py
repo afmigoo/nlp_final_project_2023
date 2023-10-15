@@ -1,6 +1,5 @@
 from dataclasses import dataclass
-from stanza.models.common.doc import Word
-from typing import Tuple, Generator
+from typing import Tuple
 
 @dataclass
 class Token:
