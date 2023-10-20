@@ -4,3 +4,4 @@ nltk
 stanza
 pandas
 python-dotenv
+uvicorn[standard]
