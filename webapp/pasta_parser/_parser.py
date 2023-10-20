@@ -36,7 +36,7 @@ def is_a_word(word: Word) -> bool:
     """
     Returns true if word is not punctuation. Words like "как-то" are recognized as words, not punctuation.
     """
-    return bool(re.match(r'[a-zA-Zа-яА-Я]+-?[a-zA-Zа-яА-Я]+', word.text))
+    return word.text.isalpha() or bool(re.match(r'[a-zA-Zа-яА-Я]+-?[a-zA-Zа-яА-Я]+', word.text))
 
 def stanza_word_to_token(word: Word, offset: int) -> Token:
     """Helper convertor function. Converts Stanza's Word into ours Token.
