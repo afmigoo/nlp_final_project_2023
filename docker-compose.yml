@@ -9,9 +9,30 @@ services:
     env_file: 
       - ./login.env
     ports:
-      - 5001:5432
+      - 5432:5432
     networks:
       - final_proj_db_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 10s
+      timeout: 30s
+      retries: 5
+      start_period: 10s  
+
+  api:
+    image: final_project_api
+    container_name: final_project_api
+    build:
+      context: ./webapp
+    env_file: 
+      - ./login.env
+    ports:
+      - 8000:8000
+    networks:
+      - final_proj_db_network
+    depends_on:
+      db:
+        condition: service_healthy
 
 networks:
   final_proj_db_network:
