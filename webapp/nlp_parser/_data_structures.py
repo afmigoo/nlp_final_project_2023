@@ -1,12 +1,13 @@
 from dataclasses import dataclass
-from typing import Tuple
+from typing import Tuple, Optional
 
 @dataclass
 class Token:
     text_position: Tuple[int, int]
-    wordform: str
-    lemma: str
-    pos_tag: str
+    sentence: int
+    wordform: int
+    lemma: int
+    pos_tag: int
 
     def __eq__(self, __value) -> bool:
         if __value == None: return False
@@ -51,3 +52,13 @@ class Trigram:
             if not token: return "-"
             return f"'{token.wordform}'({token.pos_tag.upper()})"
         return f"[{short_token_str(self[0])}, {short_token_str(self[1])}, {short_token_str(self[2])}]{self.text_position}"
+
+
+class LocalTrigram:
+
+    def __init__(self, token_1: Optional[Token] = None, token_2: Optional[Token] = None, token_3: Optional[Token] = None):
+        self.token_1, self.token_2, self.token_3 = token_1, token_2, token_3
+
+    def move(self):
+        self.token_1, self.token_2, self.token_3 = self.token_2, self.token_3, None
+
