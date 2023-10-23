@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 
+
 class SearchRequest(BaseModel):
 
     n_gram: str

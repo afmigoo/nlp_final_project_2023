@@ -16,6 +16,6 @@ async def find_n_gram(
 ):
 
     response = await _find_n_gram(
-        value=request)
+        request=request)
 
     return response

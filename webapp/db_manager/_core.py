@@ -1,16 +1,15 @@
-import psycopg2
-from typing import List
+from dotenv import load_dotenv
+import os
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
 
-from pasta_parser import Token
+load_dotenv()
 
-class DataBase:
-    def __init__(self, host: str, port, user: str, password: str) -> None:
-        self.conn = psycopg2.connect(
-            user=user,
-            password=password,
-            host=host,
-            port=port
-        )
-    
-    def put_text(self, text: str, tokens: List[Token]) -> bool:
-        pass
+database_url = os.getenv('DATABASE_URL')
+
+engine = create_engine(database_url)
+
+Base = declarative_base()
+
+SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
