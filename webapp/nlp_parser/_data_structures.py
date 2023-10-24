@@ -4,7 +4,6 @@ from typing import Tuple, Optional, List
 @dataclass
 class Token:
     text_position: Tuple[int, int]
-    sentence: int
     wordform: int
     lemma: int
     pos_tag: int
@@ -56,9 +55,9 @@ class Trigram:
 
 class LocalTrigram:
 
-    def __init__(self, token_1: Optional[Token] = None, token_2: Optional[Token] = None, token_3: Optional[Token] = None):
+    def __init__(self, sentence_id: int, token_1: Optional[Token] = None, token_2: Optional[Token] = None, token_3: Optional[Token] = None):
         self.token_1, self.token_2, self.token_3 = token_1, token_2, token_3
+        self.sentence_id = sentence_id
 
     def move(self):
         self.token_1, self.token_2, self.token_3 = self.token_2, self.token_3, None
-

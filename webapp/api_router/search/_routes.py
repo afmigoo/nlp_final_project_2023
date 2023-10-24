@@ -1,6 +1,5 @@
 from fastapi import APIRouter, status
 from ._services import _find_n_gram
-from ._schemas import SearchRequest
 
 
 router = APIRouter(
@@ -8,14 +7,16 @@ router = APIRouter(
     tags = ["Fuzzy search"])
 
 
-@router.post(
-    path = "/find",
+@router.get(
+    path = "/find/{request}",
     status_code = status.HTTP_200_OK)
 async def find_n_gram(
-    request: SearchRequest
+    request: str,
+    context_size: int | None = None
 ):
-
+    if context_size == None: context_size = 0
     response = await _find_n_gram(
-        request=request)
+        request=request,
+        context_size=context_size)
 
     return response
