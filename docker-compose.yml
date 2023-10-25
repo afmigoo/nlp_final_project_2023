@@ -10,6 +10,7 @@ services:
       - 5002:8080
     networks:
       - final_proj_api_network
+    restart: unless-stopped
 
   api:
     image: final_project_api
@@ -20,6 +21,7 @@ services:
       - 5001:8000
     networks:
       - final_proj_api_network
+    restart: unless-stopped
 
 networks:
   final_proj_api_network:
