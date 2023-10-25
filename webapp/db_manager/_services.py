@@ -1,4 +1,4 @@
-from typing import Any, Dict, Union, List, Tuple
+from typing import Any, Dict, Union, List, Tuple, Optional
 from ._models import *
 from ._core import SessionLocal, vk_access_token, vk_page, vk_version
 from nlp_parser import get_text_sentences, is_a_word, Token, LocalTrigram
@@ -12,11 +12,23 @@ import requests
 
 
 def create_session() -> SessionLocal:
+    """Create a Db session
+
+    Returns:
+        SessionLocal
+
+    """
     session = SessionLocal()
     return session
 
 
 def db_notempty() -> bool:
+    """Find out whether Db is filled
+
+    Returns:
+        bool
+
+    """
     session = create_session()
     response = len(session.query(Texts).all()) > 0
     session.close()
@@ -28,6 +40,16 @@ def add_class_to_session(
         item_class: Any,
         need_commit: bool = True
 ) -> int:
+    """Add any SQLAlchemy class to Db
+
+    Args:
+        session (SessionLocal): Db session
+        item_class (Any): SQLAlchemy class to add to Db
+        need_commit (bool): Whether it is necessary to commit after adding the class to Db. Defaults to True
+
+    Returns:
+
+    """
     session.add(item_class)
     if need_commit:
         session.commit()
@@ -38,9 +60,35 @@ def check_if_exists(
         session: SessionLocal,
         existing_dict: Dict[str, Dict[str, int]],
         item_type: str,
-        stanza_item: str,
-        item_class: Any
+        stanza_item: Dict[str, Union[str, int]],
+        item_class: Union[Lemmas, POS, WordForms]
 ) -> int:
+    """Check if item is already in Db by the dict of items.
+    If true, return item id from the dictionary, otherwise add item to the Db and the dictionary
+
+    Args:
+        session (SessionLocal): Db session
+        existing_dict (Dict[str, Dict[str, int]]): dict of items that are already in Db.
+            The possible keys of the first level are 'upos', 'lemma' and 'text'.
+            The keys of the second level are the texts of the following items, and the values are their ids in Db
+        item_type (str): the type of the item. Possible values: 'upos', 'lemma' and 'text'.
+        stanza_item (Dict[str, Union[str, int]]): token info received from stanza. Format:
+            ```
+            {
+                'id' (int): token position within the text
+                'text' (str): token text
+                'lemma' (str): lemma text
+                'upos' (str): POS-tag
+                'feats' (str): grammatical features of the token
+                'start_char' (int): index of the first token character within the text
+                'end_char' (int): index of the last token character within the text
+            }
+            ```
+        item_class (Union[Lemmas, POS, WordForms]): an empty SQLAlchemy class for the item
+
+    Returns:
+
+    """
     if stanza_item[item_type] in existing_dict[item_type]:
         return existing_dict[item_type][stanza_item[item_type]]
     item_class.text = stanza_item[item_type]
@@ -52,16 +100,27 @@ def check_if_exists(
 def parse_from_vk_api(
         result_path: str = str(os.path.join(os.getcwd(), 'instance', 'corpora_past.json'))
 ) -> None:
+    """Parse posts from VK community page
+
+    Args:
+        result_path: path to the resulting .json file. .json file format:
+            ```
+            {
+                'test' (str): paste text
+                'href' (str): links to the original post in VK
+            }
+            ```
+    """
     pasty = []
     pasty_unique = set()
     print('Краулим пасты с помощью vk api')
     for offset in tqdm(range(0, 3000, 100)):
-        response = requests.get('https://api.vk.com/method/wall.get',
-        params={'access_token': vk_access_token,
-                'v': vk_version,
-                'domain': vk_page,
-                'count': 100,
-                'offset': offset})
+        response = requests.get('https://api.vk.com/method/wall.get', params={
+            'access_token': vk_access_token,
+            'v': vk_version,
+            'domain': vk_page,
+            'count': 100,
+            'offset': offset})
         data = response.json()
         for post in data['response']['items']:
             if len(post['text'].split()) > 10 and post['text'] not in pasty_unique:
@@ -74,6 +133,15 @@ def parse_from_vk_api(
 def local_trigram_to_db_class(
         local_trigram: LocalTrigram
 ) -> Trigrams:
+    """Transform the trigram stored in the format of LocalTrigram class to SQLAlchemy class Trigrams
+
+    Args:
+        local_trigram (LocalTrigram): data stored in the LocalTrigram class format
+
+    Returns:
+        Trigrams: data stored in the Trigrams class format
+
+    """
     return Trigrams(
         sentence_id=local_trigram.sentence_id,
         first_lemma_id=local_trigram.token_1.lemma,
@@ -97,6 +165,17 @@ def local_trigram_to_db_class(
 def fill_db(
         path: str = str(os.path.join(os.getcwd(), 'instance', 'corpora_past.json'))
 ) -> None:
+    """Fill the database with parsed data from the given .json file
+
+    Args:
+        path: path to the .json file with pastes and hrefs. .json file format:
+            ```
+            {
+                'test' (str): paste text
+                'href' (str): links to the original post in VK
+            }
+            ```
+    """
     if not os.path.isfile(path):
         parse_from_vk_api(path)
     session = create_session()
@@ -155,6 +234,15 @@ def find_item_id(
         item_type: str,
         item_val: str
 ) -> int:
+    """Find id of the item, belonging to one of the classes (Lemmas, WordForms, POS), by its text
+
+    Args:
+        item_type (str): the type of the item ('lemma', 'pos', 'word_form')
+        item_val (str): item text
+
+    Returns:
+        int: item id in Db
+    """
     item_class = Lemmas if item_type == 'lemma' else POS if item_type == 'pos' else WordForms
     session = create_session()
     item_id = session.execute(select(item_class.id).where(item_class.text == item_val)).all()
@@ -173,18 +261,17 @@ def get_context_borders(
         sent_id: int,
         session: SessionLocal
 ) -> Tuple[int, int]:
-    """Узнать границы контекста в рамках оригинального текста.
+    """Get the borders for the context of given sentence with the buffer of context_size sentences from each side
 
     Args:
-        context_size (int): сколько предложений слева и справа в контексте
-        text_id (int): id оригинального текста
-        sent_id (int): id целевого предложения
-        session (_type_): лень шарить какой тип. Сессия которая create_session()
+        context_size (int): the maximum number of sentences in the buffers to the left and right
+        text_id (int): id of the text
+        sent_id (int): id of the target sentence
+        session (SessionLocal): Db session
 
     Returns:
-        Tuple[int, int]: Границы контекста в оригинальном тексте. 
-        Возвращает (-1, -1) если размер контекста = 0 (т.е. расширять его не надо) или 
-        если в теории предложение единственное в тексте.
+        Tuple[int, int]: borders of the context within the text.
+        Returns (-1, -1) in case context_size = 0 or when target sentence is the only one in the text
     """
     if not context_size:
         return -1, 1
@@ -213,33 +300,46 @@ def find_text(
         text_id: int,
         session: SessionLocal
 ) -> str:
+    """Find the text by its id
+
+    Args:
+        text_id (int): id of the text
+        session (SessionLocal): Db session
+
+    Returns:
+        str: paste full text
+    """
     return session.get(Texts, text_id).full_text
 
 
 def find_trigram(
         clauses: Dict[str, int],
-        context_size: int = 0,
-        ngram_last_num: str = 'third'
+        context_size: Optional[int] = 0,
+        ngram_last_num: Optional[str] = 'third'
 ) -> List[Dict[str, Union[int, str, List[Union[str, Tuple[int, int]]]]]]:
-    """Найти подходящие по условиям триграммы и выдать их в контексте.
+    """Find all trigrams in corpora that fit given conditions
 
     Args:
-        clauses (Dict[str, int]): условия для триграм. Напр: {"first_lemma_id": 127, "second_pos_id": 4}
-        context_size (int, optional): Размер контекста (колво предложений слева и справа). Defaults to 1.
+        clauses (Dict[str, int]): conditions for trigrams. Ex.: {"first_lemma_id": 127, "second_pos_id": 4}
+        context_size (Optional[int]): the number of sentences on the left and right of the target sentence.
+            Defaults to 0.
+        ngram_last_num (Optional[str]): the string numeral of n in n-gram
 
     Returns:
         List[Dict[str, Union[int, str]]]: list of dicts. Dict format:
-        
-        ```
-        {
-            'context': str, # Контекст, текст. `context_size` предложений + предложение с найденной нграмой
-                        + `context_size` предложений
-            'href': str, # Ссылка на оригинальный пост во Вконтакте
-            'trigram': str, # Текст нграмы
-            'trigram_context_start': int, # Индекс где в данном контексте начинается нграма
-            'trigram_context_end': int, # Индекс где в данном контексте закончивается нграма
-        }
-        ```
+            ```
+            {
+                'context' (str): context, consisting of x <= context_size sentences
+                    + target sentence + x <= context_size sentences
+                'href' (List[str]): list of links to original posts in VK that include the target sentence
+                'context_start' (int): the index of the first character of the context within the text
+                'context_end' (int): the index of the last character of the context within the text
+                'absolute_ngram_indexes' (List[Tuple[str, str]]): the list of tuples consisting of first and last character
+                    indexes within the text of all ngrams found in the sentence
+                'sentence_id' (int): id of target sentence in Db,
+                'text_id' (int): id of target text in Db
+            }
+            ```
     """
     last_gram_key = ngram_last_num + '_end_index'
 

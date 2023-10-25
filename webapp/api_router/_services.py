@@ -14,6 +14,28 @@ translate_num = {
 async def _find_n_gram(
         request: SearchRequest
 ) -> List[Dict[str, Union[int, str, List[Union[str, Tuple[int, int]]]]]]:
+    """Find all n_grams that match the given request
+
+    Args:
+        request (SearchRequest)
+
+    Returns:
+        List[Dict[str, Union[int, str, List[Union[str, Tuple[int, int]]]]]]: all tokens that match the given request.
+        Dict format:
+            ```
+            {
+                'context' (str): context, consisting of x <= context_size sentences
+                    + target sentence + x <= context_size sentences
+                'href' (List[str]): list of links to original posts in VK that include the target sentence
+                'context_start' (int): the index of the first character of the context within the text
+                'context_end' (int): the index of the last character of the context within the text
+                'absolute_ngram_indexes' (List[Tuple[str, str]]): the list of tuples consisting of first and last character
+                    indexes within the text of all ngrams found in the sentence
+                'sentence_id' (int): id of target sentence in Db,
+                'text_id' (int): id of target text in Db
+            }
+            ```
+    """
     translated_request = request_to_trigram(request.n_gram)
     if not translated_request:
         raise HTTPException(
@@ -32,6 +54,21 @@ async def _find_n_gram(
 async def _widen_context(
         request: WidenContext
 ) -> Dict[str, Union[int, str]]:
+    """Widen the given context with buffer sentences from both sides
+
+    Args:
+        request (WidenContext)
+
+    Returns:
+        Dict[str, Union[int, str]]: info about widened context borders and text. Format:
+            ```
+            {
+                'context_start' (int): the index of the first character of the widened context within the text
+                'context_end' (int): the index of the last character of the widened context within the text
+                'context' (str): widened context
+            }
+            ```
+    """
     session = create_session()
     context_start, context_end = get_context_borders(
         context_size=request.context_size,

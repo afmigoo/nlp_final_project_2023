@@ -1,10 +1,11 @@
 from pydantic import BaseModel
+from typing import Optional
 
 
 class SearchRequest(BaseModel):
 
-    n_gram: str
-    context_size: int | None = 0
+    n_gram: str  # request string
+    context_size: Optional[int] = 0  # number of buffer sentences from both sides from the target one
 
     class Config:
         schema_extra = {
@@ -20,7 +21,7 @@ class WidenContext(BaseModel):
     text_id: int
     context_start: int
     context_end: int
-    context_size: int | None = 1
+    context_size: Optional[int] = 1  # number of buffer sentences from both sides from the target one
 
     class Config:
         schema_extra = {

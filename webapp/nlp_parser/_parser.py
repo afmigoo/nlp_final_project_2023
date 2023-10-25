@@ -23,12 +23,6 @@ possible_pos_tags = {
     'X'
 }
 
-translate_num = {
-    1: 'first',
-    2: 'second',
-    3: 'third'
-}
-
 
 nlp = stanza.Pipeline(lang='ru', processors='tokenize,pos,lemma')
 
@@ -54,10 +48,16 @@ def is_a_word(word: str) -> bool:
 
 
 def is_exact_form(word: str) -> bool:
+    """
+    Returns true if token is a request for an exact word form (a token in single or double quotes)
+    """
     return bool(re.match(r'\".*\"|\'.*\'', word))
 
 
 def is_pos_tag(word: str) -> bool:
+    """
+    Returns true if token is a CoNLL-U POS-tag
+    """
     return word in possible_pos_tags
 
 
@@ -66,6 +66,9 @@ def parse_word(word: str) -> Dict[str, str]:
 
     Args:
         word (str): a word. word=walk(lemma),'walk'(wordform),"walk"(wordform)
+
+    Raises:
+        HTTPException: if given token is neither of lemma, pos-tag or word form requests
 
     Returns:
         Dict[str, str]: dict with a single key word_format: word.
