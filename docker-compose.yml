@@ -1,18 +1,26 @@
 version: '3.5'
 
 services:
-  db:
-    image: final_project_db
-    container_name: final_project_db
+  front:
+    image: final_project_front
+    container_name: final_project_front
     build:
-      context: ./postgresql
-    env_file: 
-      - ./login.env
+      context: ./frontend
     ports:
-      - 5001:5432
+      - 5002:8080
     networks:
-      - final_proj_db_network
+      - final_proj_api_network
+
+  api:
+    image: final_project_api
+    container_name: final_project_api
+    build:
+      context: ./webapp
+    ports:
+      - 5001:8000
+    networks:
+      - final_proj_api_network
 
 networks:
-  final_proj_db_network:
-    name: final_proj_db_network
+  final_proj_api_network:
+    name: final_proj_api_network
