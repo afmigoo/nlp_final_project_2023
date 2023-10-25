@@ -7,6 +7,9 @@ from sqlalchemy.orm import sessionmaker
 load_dotenv()
 
 database_url = os.getenv('DATABASE_URL')
+vk_access_token = os.getenv('TOKEN_USER')
+vk_version = os.getenv('VERSION')
+vk_page = os.getenv('DOMAIN')
 
 engine = create_engine(database_url)
 

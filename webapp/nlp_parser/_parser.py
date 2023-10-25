@@ -45,17 +45,21 @@ def get_text_sentences(text: str) -> List[Dict[str, Any]]:
     doc = nlp(text)
     return doc.to_dict()
 
+
 def is_a_word(word: str) -> bool:
     """
     Returns true if word is not punctuation. Words like "как-то" are recognized as words, not punctuation.
     """
     return word.isalpha() or bool(re.match(r'[a-zA-Zа-яА-Я]+-?[a-zA-Zа-яА-Я]+', word))
 
+
 def is_exact_form(word: str) -> bool:
     return bool(re.match(r'\".*\"|\'.*\'', word))
 
+
 def is_pos_tag(word: str) -> bool:
     return word in possible_pos_tags
+
 
 def parse_word(word: str) -> Dict[str, str]:
     """Parse a single word. It may be a wordform embedded in brackets or a lemma.
@@ -78,9 +82,14 @@ def parse_word(word: str) -> Dict[str, str]:
     if is_pos_tag(word):
         return {'pos': word}
     if is_exact_form(word):
-        return {'word_form': re.sub(r'\'|\"', '', word)}
+        return {'word_form': re.sub(r'\'|\"', '', word.lower())}
+    elif is_a_word(word):
+        return {'lemma': get_text_sentences(word)[0][0]['lemma'].lower()}
     else:
-        return {'lemma': word}
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f'Токен {word} не является ни леммой, ни pos-тегом, ни точной формой')
+
 
 def parse_single_part(part: str) -> Dict[str, str]:
     """Parses single gram from ngram
@@ -113,12 +122,14 @@ def parse_single_part(part: str) -> Dict[str, str]:
         if not ((is_a_word(subparts[0]) or is_exact_form(subparts[0])) and is_pos_tag(subparts[1])):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail='В случае запроса через плюс первая часть должна быть леммой, а вторая - pos-тегом')
+                detail="""В случае запроса через плюс первая часть должна быть леммой или точной формой, 
+                а вторая - pos-тегом""")
         result['pos'] = subparts[1]
         result.update(parse_word(subparts[0]))
     else:
         result.update(parse_word(part))
     return result
+
 
 def request_to_trigram(request: str) -> Optional[Dict[int, str]]:
     """Parses raw ngram string.
@@ -137,7 +148,7 @@ def request_to_trigram(request: str) -> Optional[Dict[int, str]]:
         "быть"+VERB сильный 'человеком'+NOUN -> 
         `{1: {'pos': 'VERB', 'word_form': 'быть'}, 2: {'lemma': 'сильный'}, 3: {'pos': 'NOUN', 'word_form': 'человеком'}}`
     """
-    reqirements_for_tokens = {}
+    requirements_for_tokens = {}
     search_parts = request.strip().split()
     if len(search_parts) > 3 or len(search_parts) < 1:
         raise HTTPException(
@@ -145,5 +156,5 @@ def request_to_trigram(request: str) -> Optional[Dict[int, str]]:
             detail='Принимаем от 1- до триграмм')
     
     for i, part in enumerate(search_parts):
-        reqirements_for_tokens[i+1] = parse_single_part(part)
-    return reqirements_for_tokens
+        requirements_for_tokens[i+1] = parse_single_part(part)
+    return requirements_for_tokens
