@@ -8,9 +8,8 @@ services:
       context: ./frontend
     ports:
       - 5002:8080
-    networks:
-      - final_proj_api_network
     restart: unless-stopped
+    network_mode: bridge
 
   api:
     image: final_project_api
@@ -19,10 +18,5 @@ services:
       context: ./webapp
     ports:
       - 5001:8000
-    networks:
-      - final_proj_api_network
     restart: unless-stopped
-
-networks:
-  final_proj_api_network:
-    name: final_proj_api_network
+    network_mode: bridge
