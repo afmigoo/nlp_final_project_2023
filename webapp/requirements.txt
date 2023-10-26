@@ -1,0 +1,9 @@
+fastapi
+psycopg2
+nltk
+stanza
+pandas
+python-dotenv
+uvicorn[standard]
+sqlalchemy
+sqlalchemy_utils
