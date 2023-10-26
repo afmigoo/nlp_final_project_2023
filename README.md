@@ -22,6 +22,21 @@
 git clone https://github.com/Affenmilchmann/nlp_final_project_2023.git
 ```
 
+Создайте файл `./webapp/.env` со следущщим содержимым:
+```ini
+DATABASE_URL='sqlite:///./instance/corpora.db'
+TOKEN_USER=<vkontakte_token_here>
+VERSION=5.81
+DOMAIN=aveshit
+```
+(Не обязательно заполнять токен вк. Он нужен для парсинга текстов из вк, которые они уже спаршены в папку [webapp/instance](./webapp/instance/). Так что если вы не будете парсить данные заново он вам не понадобится)
+
+Создайте файл `./frontend/.env` со следущщим содержимым:
+```ini
+VUE_APP_API_URL=http://localhost:5001
+```
+(Поменяйте localhost если хостите на другом домене)
+
 ```bash
 docker compose build
 ```
