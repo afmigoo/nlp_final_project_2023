@@ -75,3 +75,35 @@ docker compose up
 
     Для поиска биграм мы ищем только по `first` и `second`-столбцам и обрезаем контекст по `second_end_index` чтобы получить *"охотно кушает"*, а не *"охотно кушает вкусную"* при поиске биграмы *'охотно' 'кушает'*
     
+### Как мы ищем
+Для запроса `знать+VERB ADJ NOUN` 
+
+1. первым делом будут найдены id лемм, словоформ и POS тегов в соответствующих таблиах.
+
+2. Потом с имеющимеся id формируется такой словарь ограничений для последующего SQL запроса
+
+    ```json
+    {
+        "first_lemma_id": 341,  //id леммы знать,
+        "first_pos_id": 3,      //id POS-тега VERB
+        "second_pos_id": 2,     //id POS-тега ADJ
+        "third_pos_id": 1,      //id POS-тега NOUN
+    }
+    ```
+    И запоминается размер нграмы (чтобы потом обрезать нграму по first/second/third_end_index)
+
+3. Далее будет сформирован SQL подобный запрос:
+
+    ```SQL
+    SELECT texts.id AS text_id, texts.full_text, texts.href,
+    sentences.id AS sent_id, sentences.start_index, sentences.end_index, 
+    trigrams.first_start_index, trigrams.third_end_index
+    FROM trigrams
+    JOIN sentences  ON sentences.id = trigrams.sentence_id
+    JOIN texts      ON texts.id     = sentences.text_id
+    WHERE trigrams.first_lemma_id = 341 AND
+          trigrams.first_pos_id = 3 AND
+          trigrams.second_pos_id = 2 AND
+          trigrams.third_pos_id = 1
+    ```
+    Из которого мы получим элементы выдачи и всё необходимое для каждого элемента: контекст, позиция нграмы в контексте.
