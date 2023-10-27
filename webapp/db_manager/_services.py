@@ -352,7 +352,7 @@ def find_trigram(
     .join(Texts, Texts.id == Sentences.text_id)
     for key, item_id in clauses.items():
         trigrams = trigrams.where(getattr(Trigrams, key) == item_id)
-
+    trigrams = trigrams.limit(1000)
     session = create_session()
     output = session.execute(trigrams).all()
 
