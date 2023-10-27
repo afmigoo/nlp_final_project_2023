@@ -1,6 +1,7 @@
 fastapi
 nltk
 stanza
+pymorphy2
 pandas
 python-dotenv
 uvicorn[standard]

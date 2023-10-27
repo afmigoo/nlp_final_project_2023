@@ -1,6 +1,7 @@
 from typing import List, Any, Dict, Optional
 from stanza.models.common.doc import Sentence
 import stanza
+from pymorphy2 import MorphAnalyzer
 import re
 from fastapi import status, HTTPException
 
@@ -23,11 +24,14 @@ possible_pos_tags = {
     'X'
 }
 
+morph = MorphAnalyzer()
 
-nlp = stanza.Pipeline(lang='ru', processors='tokenize,pos,lemma')
+def load_stanza() -> stanza.Pipeline:
+    """Loads Stanza pipeline and returns it
+    """
+    return stanza.Pipeline(lang='ru', processors='tokenize,pos,lemma')
 
-
-def get_text_sentences(text: str) -> List[Dict[str, Any]]:
+def get_text_sentences(text: str, pipeline: stanza.Pipeline) -> List[Dict[str, Any]]:
     """Tokenize and POS tag text using Stanza.
 
     Args:
@@ -36,7 +40,7 @@ def get_text_sentences(text: str) -> List[Dict[str, Any]]:
     Returns:
         List[Sentence]: tokenized and POS tagged stanza sentences
     """
-    doc = nlp(text)
+    doc = pipeline(text)
     return doc.to_dict()
 
 
@@ -87,7 +91,9 @@ def parse_word(word: str) -> Dict[str, str]:
     if is_exact_form(word):
         return {'word_form': re.sub(r'\'|\"', '', word.lower())}
     elif is_a_word(word):
-        return {'lemma': get_text_sentences(word)[0][0]['lemma'].lower()}
+        parsed = morph.parse(word)
+        normal_forms = set([ p.normal_form.lower() for p in parsed ])
+        return { 'lemma': list(normal_forms) }
     else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

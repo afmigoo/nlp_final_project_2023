@@ -45,9 +45,17 @@ async def _find_n_gram(
     db_formatted_ngram = {}
     for n, filters in translated_request.items():
         for filter_type, filter_val in filters.items():
-            db_formatted_ngram[f'{translate_num[n]}_{filter_type}_id'] = find_item_id(
-                item_type=filter_type,
-                item_val=filter_val)
+            if isinstance(filter_val, str):
+                db_formatted_ngram[f'{translate_num[n]}_{filter_type}_id'] = find_item_id(
+                    item_type=filter_type,
+                    item_val=filter_val)
+            elif isinstance(filter_val, list):
+                db_formatted_ngram[f'{translate_num[n]}_{filter_type}_id'] = [
+                    find_item_id(
+                        item_type=filter_type,
+                        item_val=val)
+                    for val in filter_val
+                ]
     return find_trigram(db_formatted_ngram, request.context_size, translate_num[max(translated_request)])
 
 

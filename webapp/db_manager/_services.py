@@ -1,11 +1,11 @@
 from typing import Any, Dict, Union, List, Tuple, Optional
 from ._models import *
 from ._core import SessionLocal, vk_access_token, vk_page, vk_version
-from nlp_parser import get_text_sentences, is_a_word, Token, LocalTrigram
+from nlp_parser import get_text_sentences, is_a_word, Token, LocalTrigram, load_stanza
 import os
 from tqdm import tqdm
 from math import inf
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, or_
 from fastapi import status, HTTPException
 import json
 import requests
@@ -178,13 +178,15 @@ def fill_db(
     """
     if not os.path.isfile(path):
         parse_from_vk_api(path)
+    print('Загружаем пайплайн Stanza')
+    pipeline = load_stanza()
     session = create_session()
     already_added_items = {'lemma': {}, 'text': {}, 'upos': {}}
     print('Пишем в бд')
     with open(path, 'r', encoding='utf-8') as f:
         for text in tqdm(json.loads(f.read())):
             text_id = add_class_to_session(session=session, item_class=Texts(full_text=text['text'], href=text['href']))
-            for sentence_tokens in get_text_sentences(text['text']):
+            for sentence_tokens in get_text_sentences(text['text'], pipeline):
                 sentence_id = add_class_to_session(session=session, item_class=Sentences(
                     start_index=sentence_tokens[0]['start_char'],
                     end_index=sentence_tokens[-1]['end_char'],
@@ -350,8 +352,12 @@ def find_trigram(
     ) \
     .join(Trigrams, Trigrams.sentence_id == Sentences.id) \
     .join(Texts, Texts.id == Sentences.text_id)
-    for key, item_id in clauses.items():
-        trigrams = trigrams.where(getattr(Trigrams, key) == item_id)
+    for key, item in clauses.items():
+        if isinstance(item, int):
+            trigrams = trigrams.where(getattr(Trigrams, key) == item)
+        elif isinstance(item, list):
+            or_conditions = [getattr(Trigrams, key) == i for i in item]
+            trigrams = trigrams.where(or_(*or_conditions))
     trigrams = trigrams.limit(1000)
     session = create_session()
     output = session.execute(trigrams).all()
